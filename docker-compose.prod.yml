@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: mantenapp-postgres
+    environment:
+      POSTGRES_DB: mantenapp_prod
+      POSTGRES_USER: mantenapp_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mantenapp_secure_password_2024}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./mantenapp-admin/backend/prisma/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mantenapp_user -d mantenapp_prod"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backend API
+  backend:
+    build:
+      context: ./mantenapp-admin/backend
+      dockerfile: Dockerfile
+    container_name: mantenapp-backend
+    environment:
+      DATABASE_URL: postgresql://mantenapp_user:${DB_PASSWORD:-mantenapp_secure_password_2024}@postgres:5432/mantenapp_prod
+      JWT_SECRET: ${JWT_SECRET:-jwt-secret-super-seguro-para-produccion-2024}
+      NODE_ENV: production
+      PORT: 3001
+      CORS_ORIGIN: ${FRONTEND_URL:-https://admin.mantenapp.com}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ./logs:/app/logs
+
+  # Frontend (Build estático)
+  frontend:
+    build:
+      context: ./mantenapp-admin/frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${API_URL:-https://api.mantenapp.com}
+    container_name: mantenapp-frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy (opcional)
+  nginx:
+    image: nginx:alpine
+    container_name: mantenapp-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    profiles:
+      - nginx
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    name: mantenapp-network

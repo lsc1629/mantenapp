@@ -1,0 +1,155 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo de usuarios administradores
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("admin")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  clients Client[]
+
+  @@map("users")
+}
+
+// Modelo de clientes (sitios WordPress)
+model Client {
+  id          String    @id @default(cuid())
+  siteName    String
+  siteUrl     String    @unique
+  apiKey      String    @unique
+  status      String    @default("active") // active, inactive, suspended
+  description String?
+  contactName String?
+  contactEmail String?
+  lastSync    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relaciones
+  userId   String
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  siteData SiteData[]
+  alerts   Alert[]
+
+  // Índices
+  @@index([userId])
+  @@index([status])
+  @@index([lastSync])
+  @@map("clients")
+}
+
+// Modelo de datos de sitios
+model SiteData {
+  id          String   @id @default(cuid())
+  clientId    String
+  dataType    String   // core, plugins, themes, users, content, security, performance, updates
+  dataContent String // JSON as string for SQLite
+  collectedAt DateTime @default(now())
+
+  // Relaciones
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  // Índices
+  @@index([clientId])
+  @@index([dataType])
+  @@index([collectedAt])
+  @@index([clientId, dataType])
+  @@map("site_data")
+}
+
+// Modelo de alertas
+model Alert {
+  id         String    @id @default(cuid())
+  clientId   String
+  alertType  String    // core_update, plugin_update, theme_update, security, performance, custom
+  severity   String    // low, medium, high, critical
+  title      String
+  message    String
+  status     String    @default("active") // active, resolved, dismissed
+  metadata   String?   // JSON as string for SQLite - Información adicional específica del tipo de alerta
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
+  resolvedBy String?   // ID del usuario que resolvió
+
+  // Relaciones
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  // Índices
+  @@index([clientId])
+  @@index([alertType])
+  @@index([severity])
+  @@index([status])
+  @@index([createdAt])
+  @@index([clientId, status])
+  @@index([status, severity])
+  @@map("alerts")
+}
+
+// Modelo de configuraciones del sistema
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String    // JSON as string for SQLite
+  category  String   @default("general") // general, email, security, alerts
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@map("settings")
+}
+
+// Modelo de logs de auditoría
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String   // create, update, delete, login, logout
+  resource  String   // client, alert, user, setting
+  resourceId String?
+  details   String?   // JSON as string for SQLite
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// Modelo de notificaciones
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String?
+  type      String   // email, push, sms
+  channel   String   // alert, system, marketing
+  title     String
+  message   String
+  status    String   @default("pending") // pending, sent, failed
+  metadata  String?   // JSON as string for SQLite
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@map("notifications")
+}

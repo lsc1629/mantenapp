@@ -1,6 +1,6 @@
 {
   "name": "mantenapp-backend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Backend API para MantenApp - Sistema de gestión de sitios WordPress",
   "main": "dist/server.js",
   "scripts": {

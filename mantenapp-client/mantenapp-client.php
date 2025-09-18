@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MantenApp Cliente
  * Description: Plugin cliente para MantenApp - Versión Ultra Simple
- * Version: 1.0.3
+ * Version: 1.0.5
  * Author: MantenApp Team
  * Requires at least: 5.0
  * Tested up to: 6.4
@@ -20,7 +20,7 @@ if (version_compare(PHP_VERSION, '7.4', '<')) {
 }
 
 // Constantes básicas
-define('MANTENAPP_VERSION', '1.0.3');
+define('MANTENAPP_VERSION', '1.0.5');
 
 /**
  * Función principal de inicialización
@@ -52,19 +52,9 @@ function mantenapp_add_menu() {
 function mantenapp_admin_page() {
     $settings = get_option('mantenapp_settings', array());
     $api_key = isset($settings['api_key']) ? $settings['api_key'] : '';
-    $is_dev = mantenapp_is_development();
-    $is_staging = mantenapp_is_staging();
-    
-    if ($is_dev) {
-        $server_url = 'http://localhost:3001/api/v1';
-        $environment = 'development';
-    } elseif ($is_staging) {
-        $server_url = 'https://staging-api.mantenapp.com/api/v1';
-        $environment = 'staging';
-    } else {
-        $server_url = 'https://api.mantenapp.com/api/v1';
-        $environment = 'production';
-    }
+    $settings = get_option('mantenapp_settings', array());
+    $server_url = isset($settings['server_url']) ? $settings['server_url'] : 'https://mantenapp.onrender.com/api/v1';
+    $environment = 'manual';
     ?>
     <style>
     .mantenapp-admin-wrap { 
@@ -279,11 +269,7 @@ function mantenapp_admin_page() {
                 <div class="card-header">
                     <h2>🔑 Configuración de Conexión</h2>
                     <p>
-                        <?php if ($is_dev): ?>
-                            🔧 <strong>Modo Desarrollo:</strong> Configuración automática para localhost:3001
-                        <?php else: ?>
-                            Configura la API Key para conectar tu sitio con MantenApp
-                        <?php endif; ?>
+                        🔗 Configura la API Key y URL del servidor para conectar tu sitio con MantenApp
                     </p>
                 </div>
                 
@@ -301,15 +287,15 @@ function mantenapp_admin_page() {
                         </div>
                         
                         <div class="form-group">
-                            <label for="server_url">URL del Servidor <?php echo $is_dev ? '(Auto-detectada)' : ''; ?></label>
+                            <label for="server_url">URL del Servidor</label>
                             <input type="url" 
                                    id="server_url" 
                                    name="server_url" 
                                    value="<?php echo esc_attr($server_url); ?>" 
                                    class="form-control" 
-                                   <?php echo $is_dev ? 'readonly' : ''; ?> />
+                                   />
                             <small>
-                                <?php echo $is_dev ? '🔧 <strong>Desarrollo:</strong> Conectando automáticamente a localhost:3001' : 'URL del servidor MantenApp'; ?>
+                                🔗 URL del servidor MantenApp (ej: https://mantenapp.onrender.com/api/v1)
                             </small>
                         </div>
                         
@@ -537,20 +523,9 @@ function mantenapp_is_staging() {
 function mantenapp_activate() {
     // Crear configuración por defecto
     if (!get_option('mantenapp_settings')) {
-        $is_dev = mantenapp_is_development();
-        $is_staging = mantenapp_is_staging();
-        
-        if ($is_dev) {
-            $default_url = 'http://localhost:3001/api/v1';
-        } elseif ($is_staging) {
-            $default_url = 'https://staging-api.mantenapp.com/api/v1';
-        } else {
-            $default_url = 'https://api.mantenapp.com/api/v1';
-        }
-        
         add_option('mantenapp_settings', array(
             'api_key' => '',
-            'server_url' => $default_url
+            'server_url' => 'https://mantenapp.onrender.com/api/v1'
         ));
     }
 }

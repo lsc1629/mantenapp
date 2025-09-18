@@ -55,6 +55,19 @@ router.post('/', authenticateClient, asyncHandler(async (req: AuthenticatedClien
 }))
 
 /**
+ * GET /api/v1/sync/ping
+ * Ping simple sin autenticación
+ */
+router.get('/ping', asyncHandler(async (req: express.Request, res: Response) => {
+  res.json({
+    success: true,
+    message: 'MantenApp API funcionando correctamente',
+    timestamp: new Date().toISOString(),
+    version: '1.0.2'
+  })
+}))
+
+/**
  * GET /api/v1/sync/test
  * Test de conexión para plugins cliente
  */

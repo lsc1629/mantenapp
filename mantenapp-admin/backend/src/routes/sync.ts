@@ -68,6 +68,19 @@ router.get('/ping', asyncHandler(async (req: express.Request, res: Response) => 
 }))
 
 /**
+ * GET /api/v1/sync/debug
+ * Debug headers para diagnosticar autenticación
+ */
+router.get('/debug', asyncHandler(async (req: express.Request, res: Response) => {
+  res.json({
+    success: true,
+    headers: req.headers,
+    authorization: req.headers.authorization,
+    timestamp: new Date().toISOString()
+  })
+}))
+
+/**
  * GET /api/v1/sync/test
  * Test de conexión para plugins cliente
  */

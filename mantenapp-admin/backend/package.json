@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx src/server.ts",
-    "build": "prisma generate",
+    "build": "prisma generate && prisma db push && tsx src/utils/seed.ts",
     "start": "tsx src/server.ts"
   },
   "keywords": [
